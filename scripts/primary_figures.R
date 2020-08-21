@@ -1,18 +1,21 @@
 rm(list=ls())
 library(lubridate)
 library(patchwork)
+library(tidyverse)
+library(mcr)
+library(MethComp)
 date_matrix = tibble(date=seq(from=as_date("2007-01-01"),to=as_date("2017-12-31"),by="1 day")) %>% 
     mutate(yday = yday(date),year=year(date)) %>% 
     filter(yday>=152 & yday <= 245)
 
-sp_metab <- read_csv("model/output/alt_model/sparkling_varying_daily_full.csv") %>% 
+sp_metab <- read_csv("model/output/sparkling_varying_daily_full.csv") %>% 
     filter(name=="GPP" | name=="NEP") %>% 
     drop_na(index) 
 sp_metab <- sp_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(sp_metab) %>% arrange(name,year,yday) %>% left_join(date_matrix) %>% 
     select(name,date,middle,upper,lower) %>% 
     mutate(lake="Sparkling")
 
-sp_c14 <- read_tsv("C14_data/SP_Daily14CProd_new.txt") %>% 
+sp_c14 <- read_tsv("data/sp_daily14c_prod.txt") %>% 
     mutate(year = year(date),yday=yday(date)) %>% filter(type=="m3")
 sp_c14 <- sp_metab %>% left_join(sp_c14) %>% 
     drop_na(middle) %>% 
@@ -27,14 +30,14 @@ sp_c14 <- sp_metab %>% left_join(sp_c14) %>%
     select(date,p80,s62) %>% 
     mutate(lake="Sparkling")
 
-tr_metab <- read_csv("model/output/alt_model/trout_varying_daily_full.csv") %>% 
+tr_metab <- read_csv("model/output/trout_varying_daily_full.csv") %>% 
     filter(name=="GPP" | name=="NEP") %>% 
     drop_na(index) 
 tr_metab <- tr_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(tr_metab) %>% arrange(name,year,yday) %>% left_join(date_matrix) %>% 
     select(name,date,middle,upper,lower) %>% 
     mutate(lake="Trout")
 
-tr_c14 <- read_tsv("C14_data/TR_Daily14CProd_new.txt") %>% 
+tr_c14 <- read_tsv("data/tr_daily14c_prod.txt") %>% 
     mutate(year = year(date),yday=yday(date)) %>% filter(type=="m3") %>% 
     filter(yday(date)>=152)
 tr_c14 <- tr_metab %>% left_join(tr_c14) %>% 
@@ -50,14 +53,14 @@ tr_c14 <- tr_metab %>% left_join(tr_c14) %>%
     select(date,p80,s62) %>% 
     mutate(lake="Trout")
 
-ca_metab <- read_csv("model/output/alt_model/castle_varying_daily_full.csv") %>% 
+ca_metab <- read_csv("model/output/castle_varying_daily_full.csv") %>% 
     filter(name=="GPP" | name=="NEP") %>% 
     drop_na(index)
 ca_metab <- ca_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(ca_metab) %>% arrange(name,year,yday) %>% left_join(date_matrix) %>% 
     select(name,date,middle,upper,lower) %>% 
     mutate(lake="Castle")
 
-ca_c14 <- read_csv("C14_data/castle_c14.csv") %>% 
+ca_c14 <- read_csv("data/ca_daily14c_prod.csv") %>% 
     rename(date = Date) %>% 
     mutate(date = mdy(date)) %>% 
     mutate(yday=yday(date),year=year(date)) %>% 
@@ -154,3 +157,13 @@ shown in bottom row.",
                                  theme = theme(plot.caption = element_text(size = 10, hjust = 0)))
 
 ggsave("graphics/point_estimates.png",width=6.5,height=6.5,dpi=300)
+
+
+
+
+m2 <- mcreg(biplot$p80,biplot$middle,method.reg="PaBa")
+MCResult.plot(x=m2, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
+getCoefficients(m2)
+
+out <- PBreg(biplot$p80, y = biplot$middle/1.3)
+plot(out)
