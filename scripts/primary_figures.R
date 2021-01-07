@@ -71,68 +71,101 @@ ca_c14 <- ca_metab %>% filter(name=="GPP") %>% left_join(ca_c14) %>%
     select(date,lake,p80) %>% 
     mutate(lake="Castle")
 
+ac_metab <- read_csv("model/output/acton_daily_full.csv") %>% 
+    filter(name=="GPP" | name=="NEP") %>% 
+    drop_na(index)
+
+ac_metab <- ac_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(ac_metab) %>% arrange(name,year,yday) %>% left_join(date_matrix) %>% 
+    select(name,date,middle,upper,lower,year,yday) %>% 
+    mutate(lake="Acton")
+ac_metab <- ac_metab %>% filter(!(yday %in% c(194:196) & year == 2011)) %>% 
+    select(-yday,-year)
+
+ac_c14 <- read_csv("data/ac_daily14c_prod.csv") %>% 
+    mutate(yday=yday(date),year=year(date)) %>% 
+    rename(p80 = ppr)
+ac_c14 <- ac_metab %>% filter(name=="GPP") %>% left_join(ac_c14) %>%
+    drop_na() %>% 
+    select(date,lake,p80) %>% 
+    mutate(lake="Acton")
 
 ntl <- rbind(sp_c14,tr_c14)
-dat_c14 <- ca_c14 %>% rbind(ntl %>% select(lake,date,p80)) %>% 
+dat_c14 <- ca_c14 %>% rbind(ntl %>% select(lake,date,p80)) %>%
+    rbind(ac_c14) %>% 
     mutate(p80=p80/12.011) %>% 
     mutate(year=year(date),yday=yday(date))
-dat_metab <- rbind(sp_metab,tr_metab,ca_metab) %>% 
+dat_metab <- rbind(sp_metab,tr_metab,ca_metab,ac_metab) %>% 
     mutate(year = year(date),yday=yday(date))
 
 
 
-p1 <- ggplot(data = dat_metab ,aes(yday, middle, color = name))+
+p1 <- ggplot(data = dat_metab ,aes(yday, middle/1.25, color = name))+
     geom_hline(yintercept = 0, size = 0.3, color = "gray50")+
-    geom_ribbon(aes(ymin = lower, ymax = upper, fill = name),
+    geom_ribbon(aes(ymin = lower/1.25, ymax = upper/1.25, fill = name),
                 linetype = 0, alpha = 0.2)+
     geom_line() +
     geom_point(data = dat_c14,aes(x=yday,y=p80,color="C14")) +
     scale_color_manual(values = c("black","dodgerblue","firebrick")) +
     scale_fill_manual(values = c("dodgerblue","firebrick"),guide=FALSE) +
     theme_bw() +
-    labs(y=expression(mmol~O[2]~m^-3~d^-1),color="",x="Day of Year") +
-    facet_wrap(vars(lake,year)) +
+    labs(y=expression(mmol~C~m^-3~d^-1),color="",x="Day of Year") +
+    facet_wrap(vars(lake,year),scales = "free_y") +
     theme(strip.text.x = element_text(size = 8))
 p1 
 ggsave(plot = p1,"graphics/metabolism.png",width=10,height=7.5,dpi=300)
 
-biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(middle,p80,upper,lower) %>% drop_na()
+biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(lake,year,middle,p80,upper,lower) %>% drop_na()
+biplot_summary <- biplot %>% group_by(lake,year) %>% 
+    summarize(c14 = median(p80),free_water = median(middle/1.25))
 
-p2 <- ggplot(data = biplot,aes(x=p80,y=middle)) + 
-    geom_errorbar(aes(ymin=lower, ymax=upper),col="lightgrey") +
-    geom_point() +
+p2 <- ggplot(data = biplot_summary,aes(x=c14,y=free_water,color=lake)) + geom_point() +
+    coord_fixed(xlim = c(1,210),ylim=c(1,210)) +
     geom_abline(slope = 1,intercept = 0) +
     theme_bw()+
-    coord_fixed(xlim = c(0,11),ylim=c(0,11)) +
     theme(aspect.ratio=1) +
     labs(y =  expression(GPP~"("*mmol~O[2]~m^{-3}~day^{-1}*")"),
-         x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")"))
+        x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")")) +
+    scale_x_log10() +
+    scale_y_log10()
 p2
+ggsave(filename = "graphics/median_values.png",plot = p2,width=4,height=3.5,dpi=300)
+# p2 <- ggplot(data = biplot,aes(x=p80,y=middle)) + 
+#     geom_errorbar(aes(ymin=lower, ymax=upper),col="lightgrey") +
+#     geom_point() +
+#     geom_abline(slope = 1,intercept = 0) +
+#     theme_bw()+
+#     coord_fixed(xlim = c(0,600),ylim=c(0,600)) +
+#     theme(aspect.ratio=1) +
+#     labs(y =  expression(GPP~"("*mmol~O[2]~m^{-3}~day^{-1}*")"),
+#          x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")"))
+# p2
 
 p3 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25)) + 
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
     geom_abline(slope = 1,intercept = 0) +
     theme_bw()+
-    coord_fixed(xlim = c(0,11),ylim=c(0,11)) +
+    coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
     theme(aspect.ratio=1) +
     labs(y =  expression(GPP~"("*mmol~O[2]~m^{-3}~day^{-1}*")"),
-         x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")"))
+         x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")")) +
+    scale_x_log10() +
+    scale_y_log10()
 p3
-
-p4<-ggplot(data=biplot %>% 
-               select(middle,p80) %>% 
-               mutate(middle=middle) %>% 
-               rename(GPP = middle,C14=p80) %>% 
-               gather(value=value,key=model)) + 
-    geom_density(aes(x=value,col=model,fill=model),alpha=0.5) +
-    scale_color_manual(values = c("black","dodgerblue"),guide=FALSE)+
-    scale_fill_manual(values = c("black","dodgerblue"),guide=FALSE) +
-    lims(x=c(0,10)) + 
-    theme_bw() +
-    theme(aspect.ratio=1) +
-    labs(x = expression(Production~"("*mmol~m^{-3}~day^{-1}*")"))
-p4
+# ggsave("graphics/non_log.png")
+# p4<-ggplot(data=biplot %>% 
+#                select(middle,p80) %>% 
+#                mutate(middle=middle) %>% 
+#                rename(GPP = middle,C14=p80) %>% 
+#                gather(value=value,key=model)) + 
+#     geom_density(aes(x=value,col=model,fill=model),alpha=0.5) +
+#     scale_color_manual(values = c("black","dodgerblue"),guide=FALSE)+
+#     scale_fill_manual(values = c("black","dodgerblue"),guide=FALSE) +
+#     lims(x=c(0,10)) + 
+#     theme_bw() +
+#     theme(aspect.ratio=1) +
+#     labs(x = expression(Production~"("*mmol~m^{-3}~day^{-1}*")"))
+# p4
 p5 <-ggplot(data=biplot %>% 
                select(middle,p80) %>% 
                mutate(middle=middle/1.25) %>% 
@@ -141,19 +174,18 @@ p5 <-ggplot(data=biplot %>%
     geom_density(aes(x=value,col=model,fill=model),alpha=0.5) +
     scale_color_manual(values = c("black","dodgerblue"),guide=FALSE)+
     scale_fill_manual(values = c("black","dodgerblue"),guide=FALSE) +
-    lims(x=c(0,10)) + 
     theme_bw() +
     theme(aspect.ratio=1) +
-    labs(x = expression(Production~"("*mmol~m^{-3}~day^{-1}*")"))
+    labs(x = expression(Production~"("*mmol~m^{-3}~day^{-1}*")")) +
+    scale_x_log10()
 p5
 
-combined_plots <- (p2 + p3)/(p4+p5)
+combined_plots <- (p3 + p5)
+combined_plots
 combined_plots + plot_annotation(tag_levels = "A",
                                  caption = "Comparision of primary production estimates using free-water oxygen metabolism and 14C incubations. 
-Grey error bars in A & B are the 95% credible intervals of the free-water oxygen production estimate.
-Free-water production estimates of plots on the right (B & D) are scaled assuming a photosynthetic
-quotient of 1.25 (Hanson et al., others). Free-water (blue) and 14C (black) distribution of estimtes
-shown in bottom row.",
+Grey error bars in A are the 95% credible intervals of the free-water oxygen production estimate. 
+B) Free-water (blue) and 14C (black) distribution of estimtes.",
                                  theme = theme(plot.caption = element_text(size = 10, hjust = 0)))
 
 ggsave("graphics/point_estimates.png",width=6.5,height=6.5,dpi=300)
@@ -161,9 +193,10 @@ ggsave("graphics/point_estimates.png",width=6.5,height=6.5,dpi=300)
 
 
 
-m2 <- mcreg(biplot$p80,biplot$middle,method.reg="PaBa")
+m2 <- mcreg(log10(biplot$p80+1),log10(biplot$middle/1.25+1),method.reg="PaBa")
 MCResult.plot(x=m2, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m2)
 
-out <- PBreg(biplot$p80, y = biplot$middle/1.3)
+
+out <- PBreg(log10(biplot$p80+1), y = log10(biplot$middle/1.25+1))
 plot(out)

@@ -41,6 +41,12 @@ get.abrev <- function(lake) {
         area <- 200000
         return(c(lakeid,max_d,area))
     }
+    if (tolower(lake)=="acton") {
+        lakeid = "AN"
+        max_d <- 7
+        area <- 2529375
+        return(c(lakeid,max_d,area))
+    }
 }
 
 create.plots <- function(dat, params) {
