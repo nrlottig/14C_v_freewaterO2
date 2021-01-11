@@ -112,7 +112,7 @@ p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(yday, middle/1.25, co
     facet_wrap(vars(lake,year),scales = "free_y",ncol=4) +
     theme(strip.text.x = element_text(size = 8))
 p1 
-ggsave(plot = p1,"graphics/metabolism.pdf",width=6.5,height=7.5,dpi=300)
+ggsave(plot = p1,"graphics/metabolism.png",width=6.5,height=7,dpi=300)
 
 biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(lake,year,middle,p80,upper,lower) %>% drop_na()
 biplot_summary <- biplot %>% group_by(lake,year) %>% 
