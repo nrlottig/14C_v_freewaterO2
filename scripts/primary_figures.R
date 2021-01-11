@@ -99,7 +99,7 @@ dat_metab <- rbind(sp_metab,tr_metab,ca_metab,ac_metab) %>%
 
 
 
-p1 <- ggplot(data = dat_metab ,aes(yday, middle/1.25, color = name))+
+p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(yday, middle/1.25, color = name))+
     geom_hline(yintercept = 0, size = 0.3, color = "gray50")+
     geom_ribbon(aes(ymin = lower/1.25, ymax = upper/1.25, fill = name),
                 linetype = 0, alpha = 0.2)+
@@ -109,10 +109,10 @@ p1 <- ggplot(data = dat_metab ,aes(yday, middle/1.25, color = name))+
     scale_fill_manual(values = c("dodgerblue","firebrick"),guide=FALSE) +
     theme_bw() +
     labs(y=expression(mmol~C~m^-3~d^-1),color="",x="Day of Year") +
-    facet_wrap(vars(lake,year),scales = "free_y") +
+    facet_wrap(vars(lake,year),scales = "free_y",ncol=4) +
     theme(strip.text.x = element_text(size = 8))
 p1 
-ggsave(plot = p1,"graphics/metabolism.png",width=10,height=7.5,dpi=300)
+ggsave(plot = p1,"graphics/metabolism.pdf",width=6.5,height=7.5,dpi=300)
 
 biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(lake,year,middle,p80,upper,lower) %>% drop_na()
 biplot_summary <- biplot %>% group_by(lake,year) %>% 
@@ -191,9 +191,28 @@ B) Free-water (blue) and 14C (black) distribution of estimtes.",
 ggsave("graphics/point_estimates.png",width=6.5,height=6.5,dpi=300)
 
 
+biplot_by_lake <- biplot %>% 
+    mutate(upper = upper/1.25,lower=lower/1.25, middle=middle/1.25) %>% 
+    mutate(one_to_one = ifelse((p80 < (lower) | p80 >(upper)),1,0)) 
+    
+point_summary <- biplot_by_lake %>% group_by(lake) %>% 
+    summarize(n=n(),fraction = sum(one_to_one)/n())
 
+p6 <- ggplot(data = biplot_by_lake,aes(x=p80,y=middle,color=factor(one_to_one))) + 
+    geom_errorbar(aes(ymin=lower, ymax=upper),col="lightgrey") +
+    geom_point() +
+    geom_abline(slope = 1,intercept = 0) +
+    theme_bw()+
+    coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
+    theme(aspect.ratio=1) +
+    labs(y =  expression(GPP~"("*mmol~C~m^{-3}~day^{-1}*")"),
+         x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")")) +
+    scale_x_log10() +
+    scale_y_log10() +
+    facet_wrap(vars(lake))
+p6
 
-m2 <- mcreg(log10(biplot$p80+1),log10(biplot$middle/1.25+1),method.reg="PaBa")
+m2 <- mcreg(log10(biplot$p80+1),log10(biplot$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 MCResult.plot(x=m2, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m2)
 
