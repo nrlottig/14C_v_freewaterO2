@@ -105,7 +105,7 @@ dat_metab <- rbind(sp_metab,tr_metab,ca_metab,ac_metab) %>%
 dat_avg <- dat_metab %>% 
     arrange(lake,date) %>% 
     filter(name=="GPP") %>% 
-    dplyr:::group_by(lake,year) %>% 
+    group_by(lake,year) %>% 
     mutate(avg = rollapply(middle,width=7,median,align="center",fill=NA)) %>% 
     ungroup()
 
@@ -113,7 +113,7 @@ dat_avg <- dat_metab %>%
 biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(lake,year,middle,p80,upper,lower) %>% drop_na()
 
 #biplot data for average dayes
-biplot_avg <- dat_c14 %>% left_join(dat_avg %>% filter(name=="GPP")) %>% select(lake,year,middle,p80,upper,lower,avg) %>% drop_na()
+biplot_avg <- dat_c14 %>% left_join(dat_avg %>% filter(name=="GPP")) %>% select(lake,year,date,middle,p80,upper,lower,avg) %>% drop_na()
 
 #Overview Plot of Time Series (Figure 1)
 p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(yday, middle/1.25, color = name))+
@@ -209,7 +209,8 @@ getCoefficients(m3)
 
 
 #export final analysis and figure tables
-out <- dat_metab %>% select(-name) %>% 
+out <- dat_metab %>% filter(name=="GPP") %>% 
+    select(-name) %>% 
     rename(o2_pp_mmolcm3d = middle) %>% 
     mutate(o2_pp_mmolcm3d = o2_pp_mmolcm3d/1.25) %>% 
     rename(o2_pp_975_ci = upper) %>% 
@@ -220,3 +221,6 @@ out <- dat_metab %>% select(-name) %>%
     rename(c14_pp_mmolcm3d = p80) %>% 
     select(lake,year,yday,date, o2_pp_mmolcm3d,o2_pp_025_ci,o2_pp_975_ci,c14_pp_mmolcm3d)
 write_csv(out,"data/final/daily_pp_data.csv")
+
+out2 <- out %>% drop_na() %>% left_join(biplot_avg %>% select(lake,date,avg)) %>% 
+    rename(avg_o2_pp_mmolcm3d=avg)
