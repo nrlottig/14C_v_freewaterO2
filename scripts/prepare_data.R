@@ -1,6 +1,5 @@
 #========== 
 #========== Preliminaries
-#=
 rm(list=ls())
 # load packages
 library(tidyverse)
@@ -14,6 +13,7 @@ source("scripts/helper_functions.R")
 #=========================================== 
 # Get and process high frequency sensor data
 #===========================================
+    #Lakes are processed one lake at a time
 lake <- "acton"
 lake_id <- get.abrev(lake)[1]
 max_d <- as.numeric(get.abrev(lake)[2])
@@ -21,18 +21,19 @@ lake.area <- as.numeric(get.abrev(lake)[3])
 out.time.period <- "60 min"
 tz <-  "US/Eastern"#"US/Central"#"US/Pacific"#"US/Central"
 
-
 sonde = list.files(paste("data/sonde_raw/clean_data/",lake,sep=""), full.names = T) %>%
     lapply(read_csv) %>%
     bind_rows()
-
 if(lake == "castle") sonde <- sonde %>% drop_na(datetime)
+
+#examine years in raw data
 unique(sonde$year)
+years = c(2010:2012,2014) #select years for which to generate model input files
+sonde <- sonde %>% filter(year %in% years) #trim dataset to years
 
-years = c(2010:2012,2014)
 
-sonde <- sonde %>% filter(year %in% years)
-
+#process lake files and drop data that is bad or outside of summer stratified
+#time period
 if(lake == "sparkling"){
     data <- sonde %>% 
       mutate(datetime = ymd_hms(datetime,tz=tz)) %>% 
@@ -71,9 +72,11 @@ if(lake == "acton") {
     filter(yday >=152 & yday <= 245) %>% 
     drop_na()
 }
+
 data <- data %>% 
   group_by(year,yday) %>%
   mutate(do = ifelse(z<0.5,NA,do)) %>%  #exclude observations below DO sensor
+  #this needs to change for Castle lake which was 3m
   mutate(obs = sum(!is.na(do))) %>%       #identify and filter records that have < 23 hrs of data 
   ungroup()
 
@@ -85,6 +88,8 @@ data <- data %>% filter(obs>=(freq-(freq/24*2))) %>% #allow for 2 hours
     mutate(k = (kgas/freq)/z) %>% #convert gas to T^-1
     select(-kgas,-k600,-obs)
 
+#setting exchange to 0 in castle if sensor was shallower than z
+#these data weren't used so not relavent.
 if(lake == "castle") { 
   data <- data %>% 
     mutate(k = ifelse(z<3,0,k))
@@ -94,7 +99,7 @@ if(lake == "castle") {
 #========== Prepare for data analysis
 #==========
 
-# prepare data
+# prepare data (derived from Phillips 2020)
 sonde_prep = data %>%
     arrange(year, yday, hour) %>%
     # for each year, create identifier for uninterrupted stretches of observations
@@ -126,25 +131,6 @@ sonde_check = data %>%
     arrange(year,yday)
 
 ggplot(sonde_check,aes(x=datetime,y=do)) + geom_point(size=0.2) + geom_line() + facet_wrap(vars(year),scales="free_x")
-
-# ggsave("castle_do.png")
-# # check unique_series
-# sonde_check %>%
-#     mutate(time = yday + hour/24) %>%
-#     ggplot(aes(time, do, color=factor(unique_series)))+
-#     facet_wrap(~year)+
-#     geom_line()+
-#     scale_color_discrete(guide = F)+
-#     theme_bw()
-# 
-# # check unique_days
-# sonde_check %>%
-#     mutate(time = yday + hour/24) %>%
-#     filter(unique_day %in% (50 + c(1:10))) %>%
-#     ggplot(aes(time, do, color=factor(unique_day)))+
-#     facet_wrap(~year, scale = "free_x", nrow=2)+
-#     geom_line()+
-#     theme_bw()
 
 # export prepared data
 if(length(years) == 1) {
