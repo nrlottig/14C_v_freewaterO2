@@ -224,3 +224,4 @@ write_csv(out,"data/final/daily_pp_data.csv")
 
 out2 <- out %>% drop_na() %>% left_join(biplot_avg %>% select(lake,date,avg)) %>% 
     rename(avg_o2_pp_mmolcm3d=avg)
+write_csv(out2,"data/final/discreate_pp_data.csv")
