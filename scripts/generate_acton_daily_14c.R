@@ -7,10 +7,13 @@ acton_c14 <- read_csv("data/acton_c14.csv")
 mixed_depth <- read_csv("data/model_input/sonde_prep_acton_2010_2014.csv") %>% 
     select(year,yday,z) %>% 
     dplyr:::group_by(year,yday) %>% 
-    dplyr:::summarize(z=mean(z,na.rm=TRUE)) %>% 
-    mutate(z=round_any(z,0.5)) %>% 
-    drop_na()
+    dplyr:::summarize(zmin=min(z,na.rm=TRUE),zavg=mean(z,na.rm=TRUE)) %>% 
+    mutate(zrd=round_any(zmin,0.5,floor)) %>%
+    drop_na() %>% 
+    select(year,yday,zrd)
+
 detach(package:plyr)
+mixed_depth <- mixed_depth %>% rename(z=zrd)
 
 data <- acton_c14 %>% mutate(date = dmy(Date)) %>% 
     select(-X3,-Date)
@@ -38,4 +41,9 @@ temp <- data %>% full_join(date_depth_matrix) %>% arrange(date,depth) %>%
     filter(depth <= z[1]) %>% 
     summarize(ppr = mean(value))
 
-write_csv(temp,"data/ac_daily14c_prod.csv")           
+temp2 <- data %>% filter(depth <=1) %>% 
+    group_by(date) %>% 
+    summarize(ppr0m_1m = mean(value))
+
+temp <- temp %>% left_join(temp2)
+write_csv(temp,"data/c14/ac_daily14c_prod.csv")           

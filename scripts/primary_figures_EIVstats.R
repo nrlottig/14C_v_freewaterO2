@@ -18,7 +18,7 @@ sp_metab <- sp_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(s
     select(name,date,middle,upper,lower) %>% 
     mutate(lake="Sparkling")
 
-sp_c14 <- read_tsv("data/sp_daily14c_prod.txt") %>% 
+sp_c14 <- read_tsv("data/c14/sp_daily14c_prod.txt") %>% 
     mutate(year = year(date),yday=yday(date)) %>% filter(type=="m3")
 sp_c14 <- sp_metab %>% left_join(sp_c14) %>% 
     drop_na(middle) %>% 
@@ -40,7 +40,7 @@ tr_metab <- tr_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(t
     select(name,date,middle,upper,lower) %>% 
     mutate(lake="Trout")
 
-tr_c14 <- read_tsv("data/tr_daily14c_prod.txt") %>% 
+tr_c14 <- read_tsv("data/c14/tr_daily14c_prod.txt") %>% 
     mutate(year = year(date),yday=yday(date)) %>% filter(type=="m3") %>% 
     filter(yday(date)>=152)
 tr_c14 <- tr_metab %>% left_join(tr_c14) %>% 
@@ -63,7 +63,7 @@ ca_metab <- ca_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(c
     select(name,date,middle,upper,lower) %>% 
     mutate(lake="Castle")
 
-ca_c14 <- read_csv("data/ca_daily14c_prod.csv") %>% 
+ca_c14 <- read_csv("data/c14/ca_daily14c_prod.csv") %>% 
     rename(date = Date) %>% 
     mutate(date = mdy(date)) %>% 
     mutate(yday=yday(date),year=year(date)) %>% 
@@ -84,7 +84,7 @@ ac_metab <- ac_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(a
 ac_metab <- ac_metab %>% filter(!(yday %in% c(194:196) & year == 2011)) %>% 
     select(-yday,-year)
 
-ac_c14 <- read_csv("data/ac_daily14c_prod.csv") %>% 
+ac_c14 <- read_csv("data/c14/ac_daily14c_prod.csv") %>% 
     mutate(yday=yday(date),year=year(date)) %>% 
     rename(p80 = ppr)
 ac_c14 <- ac_metab %>% filter(name=="GPP") %>% left_join(ac_c14) %>%
@@ -99,7 +99,9 @@ dat_c14 <- ca_c14 %>% rbind(ntl %>% select(lake,date,p80)) %>%
     mutate(p80=p80/12.011) %>% 
     mutate(year=year(date),yday=yday(date))
 dat_metab <- rbind(sp_metab,tr_metab,ca_metab,ac_metab) %>% 
-    mutate(year = year(date),yday=yday(date))
+    mutate(year = year(date),yday=yday(date)) %>% 
+    filter(name=="GPP") %>% 
+    arrange(lake,date)
 
 #7-day Average Data
 dat_avg <- dat_metab %>% 
@@ -139,8 +141,8 @@ p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25)) +
     theme_bw()+
     coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
     theme(aspect.ratio=1) +
-    labs(y =  expression(GPP~"("*mmol~O[2]~m^{-3}~day^{-1}*")"),
-         x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")")) +
+    labs(y =  expression(Free*"-"*water~O[2]~Method),
+         x = expression(""^14*C~Incubation~Method)) +
     scale_x_log10() +
     scale_y_log10()
 p2
@@ -151,11 +153,13 @@ p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) +
     theme_bw()+
     coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
     theme(aspect.ratio=1) +
-    labs(y =  expression(GPP~"("*mmol~O[2]~m^{-3}~day^{-1}*")"),
-         x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")")) +
+    labs(y =  expression(Free*"-"*water~O[2]~Method),
+         x = expression(""^14*C~Incubation~Method)) +
     scale_x_log10() +
     scale_y_log10()
 p3
+
+ggsave(plot = p3,"graphics/median_point.pdf",width=3,height=3,units="in",dpi=300)
 
 # Distribution Comparision
 p4 <-ggplot(data=biplot %>% 
@@ -184,8 +188,8 @@ p5 <- ggplot(data = biplot,aes(x=p80,y=middle)) +
     theme_bw()+
     coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
     theme(aspect.ratio=1) +
-    labs(y =  expression(GPP~"("*mmol~C~m^{-3}~day^{-1}*")"),
-         x = expression(C[14]~"("*mmol~C~m^{-3}~day^{-1}*")")) +
+    labs(y =  expression(Free*"-"*water~O[2]~Method),
+         x = expression(""^14*C~Incubation~Method)) +
     scale_x_log10() +
     scale_y_log10() +
     facet_wrap(vars(lake))
@@ -202,11 +206,24 @@ ggsave("graphics/lake_values.pdf",width=3,height=3.5,units="in",dpi=300)
 m2 <- mcreg(log10(biplot$p80+1),log10(biplot$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 MCResult.plot(x=m2, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m2)
+m2b <- mcreg((biplot$p80),(biplot$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+biplot_acton <- biplot %>% filter(lake=="Acton")
+m2c <- mcreg((biplot_acton$p80),(biplot_acton$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+getCoefficients(m2c)
+
 #7 day average
 m3 <- mcreg(log10(biplot_avg$p80+1),log10(biplot_avg$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 MCResult.plot(x=m3, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m3)
+m3b <- mcreg((biplot_avg$p80),(biplot_avg$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 
+pdf(file = "graphics/pb_regressions.pdf",width=6.5,height=6.5)
+par(mfrow=c(2,2))
+plot(m2,sub="")
+plot(m2b,sub="")
+plot(m3,sub="")
+MCResult.plot(m3b,sub="")
+dev.off()
 
 #export final analysis and figure tables
 out <- dat_metab %>% filter(name=="GPP") %>% 
@@ -225,3 +242,8 @@ write_csv(out,"data/final/daily_pp_data.csv")
 out2 <- out %>% drop_na() %>% left_join(biplot_avg %>% select(lake,date,avg)) %>% 
     rename(avg_o2_pp_mmolcm3d=avg)
 write_csv(out2,"data/final/discreate_pp_data.csv")
+
+out3 <- out %>% left_join(biplot_avg %>% select(lake,date,avg)) %>% 
+    rename(avg_o2_pp_mmolcm3d=avg) %>% 
+    mutate(avg_o2_pp_mmolcm3d = avg_o2_pp_mmolcm3d/1.25)
+write_csv(out3,"data/final/lottig_etal_data.csv")
