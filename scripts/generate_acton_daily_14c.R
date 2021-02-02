@@ -30,16 +30,17 @@ date_depth_matrix <- data %>% select(date,depth) %>%
     mutate(depth = c(0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,NA)) %>% 
     drop_na()
 
+data <- data %>% filter(value >0)
 temp <- data %>% full_join(date_depth_matrix) %>% arrange(date,depth) %>% 
     group_by(date) %>% 
     mutate(year=year[1],yday=yday[1]) %>% 
-    mutate(value=na.approx(value)) %>% 
+    mutate(value=na.approx(value,maxgap = 1)) %>% 
     ungroup() %>% 
     left_join(mixed_depth) %>% 
     drop_na(z) %>% 
     group_by(date) %>% 
     filter(depth <= z[1]) %>% 
-    summarize(ppr = mean(value))
+    summarize(ppr = mean(value,na.rm=TRUE))
 
 temp2 <- data %>% filter(depth <=1) %>% 
     group_by(date) %>% 
