@@ -131,7 +131,7 @@ p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(yday, middle/1.25, co
     facet_wrap(vars(lake,year),scales = "free_y",ncol=4) +
     theme(strip.text.x = element_text(size = 8))
 p1 
-ggsave(plot = p1,"graphics/metabolism.pdf",width=6.5,height=8,dpi=300,units="in")
+ggsave(plot = p1,"graphics/metabolism.pdf",width=6.4,height=7.9,dpi=300,units="in")
 
 #Biplot of discreate Days
 p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25)) + 
@@ -148,6 +148,8 @@ p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25)) +
 p2
 #biplot of 7 day median GPP
 p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) + 
+    geom_point(aes(x=p80,y=middle/1.25),color="lightgrey") +
+    # geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
     geom_abline(slope = 1,intercept = 0) +
     theme_bw()+
@@ -181,8 +183,8 @@ combined_plots
 combined_plots + plot_annotation(tag_levels = "A", theme = theme(plot.caption = element_text(size = 10, hjust = 0)))
 ggsave("graphics/point_estimates.pdf",width=3,height=5.75,units="in",dpi=300)
 
-p5 <- ggplot(data = biplot,aes(x=p80,y=middle)) + 
-    geom_errorbar(aes(ymin=lower, ymax=upper),col="lightgrey") +
+p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25)) + 
+    geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
     geom_abline(slope = 1,intercept = 0) +
     theme_bw()+
@@ -203,7 +205,7 @@ ggsave("graphics/lake_values.pdf",width=3,height=3.5,units="in",dpi=300)
 ##############
 
 #discreate daily
-m2 <- mcreg(log10(biplot$p80+1),log10(biplot$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+m2 <- mcreg((biplot$p80+1),(biplot$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 MCResult.plot(x=m2, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m2)
 m2b <- mcreg((biplot$p80),(biplot$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
@@ -216,6 +218,23 @@ m3 <- mcreg(log10(biplot_avg$p80+1),log10(biplot_avg$middle/1.25+1),method.reg="
 MCResult.plot(x=m3, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m3)
 m3b <- mcreg((biplot_avg$p80),(biplot_avg$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+
+#lake specific regressions
+temp <- biplot %>% filter(lake=="Acton")
+acton_reg <- mcreg(temp$p80,(temp$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+getCoefficients(acton_reg)
+temp <- biplot %>% filter(lake=="Castle")
+castle_reg <- mcreg(temp$p80,(temp$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+getCoefficients(castle_reg)
+temp <- biplot %>% filter(lake=="Sparkling")
+sparkling_reg <- mcreg(temp$p80,(temp$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+getCoefficients(sparkling_reg)
+temp <- biplot %>% filter(lake=="Trout")
+trout_reg <- mcreg(temp$p80,(temp$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+getCoefficients(trout_reg)
+temp <- biplot %>% filter(lake!="Acton")
+lowp_reg <- mcreg(temp$p80,(temp$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+getCoefficients(lowp_reg)
 
 pdf(file = "graphics/pb_regressions.pdf",width=6.5,height=6.5)
 par(mfrow=c(2,2))
