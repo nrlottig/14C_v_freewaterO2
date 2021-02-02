@@ -65,10 +65,8 @@ ca_metab <- ca_metab %>% expand(yday=full_seq(yday,1),name,year) %>% left_join(c
 
 ca_c14 <- read_csv("data/c14/ca_daily14c_prod.csv") %>% 
     rename(date = Date) %>% 
-    mutate(date = mdy(date)) %>% 
     mutate(yday=yday(date),year=year(date)) %>% 
-    rename(p80 = mgc_l_d) %>% 
-    mutate(p80 = p80*1000)
+    rename(p80 = ppr)
 ca_c14 <- ca_metab %>% filter(name=="GPP") %>% left_join(ca_c14) %>%
     drop_na() %>% 
     select(date,lake,p80) %>% 
@@ -204,7 +202,10 @@ ggsave("graphics/lake_values.pdf",width=3,height=3.5,units="in",dpi=300)
 #Credible Interval Overlap
 ##############
 temp <- biplot %>% mutate(CI = ifelse(p80>=lower/1.25 & p80 <= upper/1.25,1,0))
-
+sum(temp$CI)/101
+#exclude castle
+temp <- biplot %>% filter(lake != "Castle") %>% mutate(CI = ifelse(p80>=lower/1.25 & p80 <= upper/1.25,1,0))
+sum(temp$CI)/nrow(temp)
 ##############
 #EIV Regression
 ##############
