@@ -201,6 +201,11 @@ p5
 ggsave("graphics/lake_values.pdf",width=3,height=3.5,units="in",dpi=300)
 
 ##############
+#Credible Interval Overlap
+##############
+temp <- biplot %>% mutate(CI = ifelse(p80>=lower/1.25 & p80 <= upper/1.25,1,0))
+
+##############
 #EIV Regression
 ##############
 
