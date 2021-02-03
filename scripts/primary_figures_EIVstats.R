@@ -211,19 +211,28 @@ sum(temp$CI)/nrow(temp)
 ##############
 
 #discreate daily
-m2 <- mcreg((biplot$p80+1),(biplot$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+#log transformed
+m2 <- mcreg(log10(biplot$p80+1),log10(biplot$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 MCResult.plot(x=m2, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m2)
+
+#natural scale
 m2b <- mcreg((biplot$p80),(biplot$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+MCResult.plot(x=m2b, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
+getCoefficients(m2b)
+
 biplot_acton <- biplot %>% filter(lake=="Acton")
 m2c <- mcreg((biplot_acton$p80),(biplot_acton$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 getCoefficients(m2c)
 
+biplot_low <- biplot %>% filter(lake!="Acton")
+m2d <- mcreg((biplot_low$p80),(biplot_low$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+getCoefficients(m2d)
+
 #7 day average
-m3 <- mcreg(log10(biplot_avg$p80+1),log10(biplot_avg$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+m3 <- mcreg((biplot_avg$p80),(biplot_avg$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 MCResult.plot(x=m3, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m3)
-m3b <- mcreg((biplot_avg$p80),(biplot_avg$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 
 #lake specific regressions
 temp <- biplot %>% filter(lake=="Acton")
