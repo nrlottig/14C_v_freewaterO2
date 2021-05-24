@@ -123,7 +123,7 @@ p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(yday, middle/1.25, co
                 linetype = 0, alpha = 0.2)+
     geom_line() +
     geom_point(data = dat_c14,aes(x=yday,y=p80,color="C14")) +
-    scale_color_manual(values = c("black","dodgerblue","firebrick")) +
+    scale_color_manual(values = c("black","dodgerblue"),labels = c(expression(""^14*C),expression(O[2]))) +
     scale_fill_manual(values = c("dodgerblue","firebrick"),guide=FALSE) +
     theme_bw() +
     labs(y=expression(mmol~C~m^-3~d^-1),color="",x="Day of Year") +
