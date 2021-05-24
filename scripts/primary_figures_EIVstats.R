@@ -166,19 +166,19 @@ p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) +
 p3
 
 ggsave(plot = p3,"graphics/median_point.pdf",width=3,height=3,units="in",dpi=300)
-
-p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25)) + 
+p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) + 
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
     geom_abline(slope = 1,intercept = 0) +
     theme_bw()+
     coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
     theme(aspect.ratio=1) +
-    labs(y =  expression(Free*"-"*water~O[2]~Method),
-         x = expression(""^14*C~Incubation~Method)) +
+    labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
+         x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
     scale_x_log10() +
     scale_y_log10() +
-    facet_wrap(vars(lake))
+    facet_wrap(vars(lake))+
+    theme(legend.position = "none")
 p5
 
 
