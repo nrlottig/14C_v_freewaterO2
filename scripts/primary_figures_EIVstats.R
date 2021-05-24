@@ -5,6 +5,7 @@ library(tidyverse)
 library(zoo)
 library(mcr)
 library(MethComp)
+library(ggExtra)
 
 #Get raw data files
 date_matrix = tibble(date=seq(from=as_date("2007-01-01"),to=as_date("2017-12-31"),by="1 day")) %>% 
@@ -132,18 +133,23 @@ p1
 ggsave(plot = p1,"graphics/metabolism.pdf",width=6.4,height=7.9,dpi=300,units="in")
 
 #Biplot of discreate Days
-p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25)) + 
+p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=lake)) + 
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
     geom_abline(slope = 1,intercept = 0) +
     theme_bw()+
-    coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
     theme(aspect.ratio=1) +
-    labs(y =  expression(Free*"-"*water~O[2]~Method),
-         x = expression(""^14*C~Incubation~Method)) +
-    scale_x_log10() +
-    scale_y_log10()
+    labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
+         x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
+    scale_x_log10(limits=c(.5,1000)) +
+    scale_y_log10(limits=c(0.5,1000)) +
+    theme(legend.position = "bottom") +
+    theme(legend.title = element_blank())
 p2
+
+p4 <- ggMarginal(p2,type="density")
+ggsave(plot = p4,"graphics/point_estimates.pdf",width=4,height=4,units="in",dpi=300)
+
 #biplot of 7 day median GPP
 p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) + 
     geom_point(aes(x=p80,y=middle/1.25),color="lightgrey") +
@@ -153,33 +159,13 @@ p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) +
     theme_bw()+
     coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
     theme(aspect.ratio=1) +
-    labs(y =  expression(Free*"-"*water~O[2]~Method),
-         x = expression(""^14*C~Incubation~Method)) +
+    labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
+         x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
     scale_x_log10() +
     scale_y_log10()
 p3
 
 ggsave(plot = p3,"graphics/median_point.pdf",width=3,height=3,units="in",dpi=300)
-
-# Distribution Comparision
-p4 <-ggplot(data=biplot %>% 
-                select(middle,p80) %>% 
-                mutate(middle=middle/1.25) %>% 
-                rename(GPP = middle,C14=p80) %>% 
-                gather(value=value,key=model)) + 
-    geom_density(aes(x=value,col=model,fill=model),alpha=0.5) +
-    scale_color_manual(values = c("black","dodgerblue"),guide=FALSE)+
-    scale_fill_manual(values = c("black","dodgerblue"),guide=FALSE) +
-    theme_bw() +
-    theme(aspect.ratio=1) +
-    labs(x = expression(Production~"("*mmol~m^{-3}~day^{-1}*")")) +
-    scale_x_log10()
-p4
-
-combined_plots <- (p2/p4)
-combined_plots
-combined_plots + plot_annotation(tag_levels = "A", theme = theme(plot.caption = element_text(size = 10, hjust = 0)))
-ggsave("graphics/point_estimates.pdf",width=3,height=5.75,units="in",dpi=300)
 
 p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25)) + 
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
@@ -216,11 +202,6 @@ m2 <- mcreg(log10(biplot$p80+1),log10(biplot$middle/1.25+1),method.reg="PaBa",me
 MCResult.plot(x=m2, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m2)
 
-#natural scale
-m2b <- mcreg((biplot$p80),(biplot$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
-MCResult.plot(x=m2b, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
-getCoefficients(m2b)
-
 biplot_acton <- biplot %>% filter(lake=="Acton")
 m2c <- mcreg((biplot_acton$p80),(biplot_acton$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 getCoefficients(m2c)
@@ -230,7 +211,7 @@ m2d <- mcreg((biplot_low$p80),(biplot_low$middle/1.25),method.reg="PaBa",method.
 getCoefficients(m2d)
 
 #7 day average
-m3 <- mcreg((biplot_avg$p80),(biplot_avg$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+m3 <- mcreg(log10(biplot_avg$p80+1),log10(biplot_avg$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 MCResult.plot(x=m3, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
 getCoefficients(m3)
 
