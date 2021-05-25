@@ -117,18 +117,20 @@ biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(la
 biplot_avg <- dat_c14 %>% left_join(dat_avg %>% filter(name=="GPP")) %>% select(lake,year,date,middle,p80,upper,lower,avg) %>% drop_na()
 
 #Overview Plot of Time Series (Figure 1)
-p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(yday, middle/1.25, color = name))+
+#mutate(date = as.Date(strptime(paste0(year, yday), format=“%Y %j”)))
+p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(as.Date(yday, origin = as.Date("2019-01-01")), middle/1.25, color = name))+
     geom_hline(yintercept = 0, size = 0.3, color = "gray50")+
     geom_ribbon(aes(ymin = lower/1.25, ymax = upper/1.25, fill = name),
                 linetype = 0, alpha = 0.2)+
     geom_line() +
-    geom_point(data = dat_c14,aes(x=yday,y=p80,color="C14")) +
+    geom_point(data = dat_c14,aes(x=as.Date(yday, origin = as.Date("2019-01-01")),y=p80,color="C14")) +
     scale_color_manual(values = c("black","dodgerblue"),labels = c(expression(""^14*C),expression(O[2]))) +
     scale_fill_manual(values = c("dodgerblue","firebrick"),guide=FALSE) +
     theme_bw() +
     labs(y=expression(mmol~C~m^-3~d^-1),color="",x="Day of Year") +
     facet_wrap(vars(lake,year),scales = "free_y",ncol=4) +
-    theme(strip.text.x = element_text(size = 8))
+    theme(strip.text.x = element_text(size = 8))+
+    theme(legend.position = "none")
 p1 
 ggsave(plot = p1,"graphics/metabolism.pdf",width=6.4,height=7.9,dpi=300,units="in")
 
