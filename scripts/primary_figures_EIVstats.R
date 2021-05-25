@@ -132,7 +132,7 @@ p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(as.Date(yday, origin 
     theme(strip.text.x = element_text(size = 8))+
     theme(legend.position = "none")
 p1 
-ggsave(plot = p1,"graphics/metabolism.pdf",width=6.4,height=7.9,dpi=300,units="in")
+ggsave(plot = p1,"graphics/metabolism.pdf",width=7,height=7.9,dpi=300,units="in")
 
 #Biplot of discreate Days
 p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=lake)) + 
@@ -150,24 +150,24 @@ p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=lake)) +
 p2
 
 p4 <- ggMarginal(p2,type="density")
-ggsave(plot = p4,"graphics/point_estimates.pdf",width=4,height=4,units="in",dpi=300)
+ggsave(plot = p4,"graphics/point_estimates.pdf",width=5,height=5,units="in",dpi=300)
 
 #biplot of 7 day median GPP
-p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) + 
-    geom_point(aes(x=p80,y=middle/1.25),color="lightgrey") +
-    # geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
-    geom_point() +
-    geom_abline(slope = 1,intercept = 0) +
-    theme_bw()+
-    coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
-    theme(aspect.ratio=1) +
-    labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
-         x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
-    scale_x_log10() +
-    scale_y_log10()
-p3
+# p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) + 
+#     geom_point(aes(x=p80,y=middle/1.25),color="lightgrey") +
+#     # geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
+#     geom_point() +
+#     geom_abline(slope = 1,intercept = 0) +
+#     theme_bw()+
+#     coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
+#     theme(aspect.ratio=1) +
+#     labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
+#          x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
+#     scale_x_log10() +
+#     scale_y_log10()
+# p3
 
-ggsave(plot = p3,"graphics/median_point.pdf",width=3,height=3,units="in",dpi=300)
+# ggsave(plot = p3,"graphics/median_point.pdf",width=3,height=3,units="in",dpi=300)
 p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) + 
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
@@ -184,7 +184,7 @@ p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) +
 p5
 
 
-ggsave("graphics/lake_values.pdf",width=3,height=3.5,units="in",dpi=300)
+ggsave("graphics/lake_values.pdf",width=5,height=5,units="in",dpi=300)
 
 ##############
 #Credible Interval Overlap
