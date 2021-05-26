@@ -102,13 +102,6 @@ dat_metab <- rbind(sp_metab,tr_metab,ca_metab,ac_metab) %>%
     filter(name=="GPP") %>% 
     arrange(lake,date)
 
-# #7-day Average Data
-# dat_avg <- dat_metab %>% 
-#     arrange(lake,date) %>% 
-#     filter(name=="GPP") %>% 
-#     group_by(lake,year) %>% 
-#     mutate(avg = rollapply(middle,width=7,median,align="center",fill=NA)) %>% 
-#     ungroup()
 
 #biplot data for discreate days
 biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(lake,year,middle,p80,upper,lower) %>% drop_na()
@@ -153,22 +146,6 @@ p4 <- ggMarginal(p2,type="density")
 p4
 ggsave(plot = p4,"graphics/point_estimates.pdf",width=3.5,height=3.5,units="in",dpi=300)
 
-#biplot of 7 day median GPP
-# p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) + 
-#     geom_point(aes(x=p80,y=middle/1.25),color="lightgrey") +
-#     # geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
-#     geom_point() +
-#     geom_abline(slope = 1,intercept = 0) +
-#     theme_bw()+
-#     coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
-#     theme(aspect.ratio=1) +
-#     labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
-#          x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
-#     scale_x_log10() +
-#     scale_y_log10()
-# p3
-
-# ggsave(plot = p3,"graphics/median_point.pdf",width=3,height=3,units="in",dpi=300)
 p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) + 
     geom_abline(slope = 1,intercept = 0) +
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
@@ -211,11 +188,6 @@ getCoefficients(m2c)
 biplot_low <- biplot %>% filter(lake!="Acton")
 m2d <- mcreg((biplot_low$p80),(biplot_low$middle/1.25),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
 getCoefficients(m2d)
-
-#7 day average
-# m3 <- mcreg(log10(biplot_avg$p80+1),log10(biplot_avg$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
-# MCResult.plot(x=m3, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
-# getCoefficients(m3)
 
 #lake specific regressions
 temp <- biplot %>% filter(lake=="Acton")
