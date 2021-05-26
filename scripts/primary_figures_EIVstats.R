@@ -102,30 +102,30 @@ dat_metab <- rbind(sp_metab,tr_metab,ca_metab,ac_metab) %>%
     filter(name=="GPP") %>% 
     arrange(lake,date)
 
-#7-day Average Data
-dat_avg <- dat_metab %>% 
-    arrange(lake,date) %>% 
-    filter(name=="GPP") %>% 
-    group_by(lake,year) %>% 
-    mutate(avg = rollapply(middle,width=7,median,align="center",fill=NA)) %>% 
-    ungroup()
+# #7-day Average Data
+# dat_avg <- dat_metab %>% 
+#     arrange(lake,date) %>% 
+#     filter(name=="GPP") %>% 
+#     group_by(lake,year) %>% 
+#     mutate(avg = rollapply(middle,width=7,median,align="center",fill=NA)) %>% 
+#     ungroup()
 
 #biplot data for discreate days
 biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(lake,year,middle,p80,upper,lower) %>% drop_na()
 
 #biplot data for average dayes
-biplot_avg <- dat_c14 %>% left_join(dat_avg %>% filter(name=="GPP")) %>% select(lake,year,date,middle,p80,upper,lower,avg) %>% drop_na()
+# biplot_avg <- dat_c14 %>% left_join(dat_avg %>% filter(name=="GPP")) %>% select(lake,year,date,middle,p80,upper,lower,avg) %>% drop_na()
 
 #Overview Plot of Time Series (Figure 1)
 #mutate(date = as.Date(strptime(paste0(year, yday), format=“%Y %j”)))
-p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(as.Date(yday, origin = as.Date("2019-01-01")), middle/1.25, color = name))+
+p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(as.Date(yday, origin = as.Date("2019-01-01")), middle/1.25))+
     geom_hline(yintercept = 0, size = 0.3, color = "gray50")+
-    geom_ribbon(aes(ymin = lower/1.25, ymax = upper/1.25, fill = name),
-                linetype = 0, alpha = 0.2)+
-    geom_line() +
-    geom_point(data = dat_c14,aes(x=as.Date(yday, origin = as.Date("2019-01-01")),y=p80,color="C14")) +
-    scale_color_manual(values = c("black","dodgerblue"),labels = c(expression(""^14*C),expression(O[2]))) +
-    scale_fill_manual(values = c("dodgerblue","firebrick"),guide=FALSE) +
+    geom_ribbon(aes(ymin = lower/1.25, ymax = upper/1.25, fill = as.factor(lake)),
+    linetype = 0, alpha = 0.2)+
+    geom_line(aes(color=as.factor(lake))) +
+    geom_point(data = dat_c14,aes(x=as.Date(yday, origin = as.Date("2019-01-01")),y=p80),color="black") +
+    # scale_color_manual(values = c("black","dodgerblue"),labels = c(expression(""^14*C),expression(O[2]))) +
+    # scale_fill_manual(values = c("dodgerblue","firebrick"),guide=FALSE) +
     theme_bw() +
     labs(y=expression(mmol~C~m^-3~d^-1),color="",x="Day of Year") +
     facet_wrap(vars(lake,year),scales = "free_y",ncol=4) +
@@ -136,9 +136,9 @@ ggsave(plot = p1,"graphics/metabolism.pdf",width=7,height=7.9,dpi=300,units="in"
 
 #Biplot of discreate Days
 p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=lake)) + 
+    geom_abline(slope = 1,intercept = 0) +
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
-    geom_abline(slope = 1,intercept = 0) +
     theme_bw()+
     theme(aspect.ratio=1) +
     labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
@@ -150,7 +150,8 @@ p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=lake)) +
 p2
 
 p4 <- ggMarginal(p2,type="density")
-ggsave(plot = p4,"graphics/point_estimates.pdf",width=5,height=5,units="in",dpi=300)
+p4
+ggsave(plot = p4,"graphics/point_estimates.pdf",width=3.5,height=3.5,units="in",dpi=300)
 
 #biplot of 7 day median GPP
 # p3 <- ggplot(data = biplot_avg,aes(x=p80,y=avg/1.25)) + 
@@ -169,9 +170,9 @@ ggsave(plot = p4,"graphics/point_estimates.pdf",width=5,height=5,units="in",dpi=
 
 # ggsave(plot = p3,"graphics/median_point.pdf",width=3,height=3,units="in",dpi=300)
 p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) + 
+    geom_abline(slope = 1,intercept = 0) +
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
-    geom_abline(slope = 1,intercept = 0) +
     theme_bw()+
     coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
     theme(aspect.ratio=1) +
@@ -183,8 +184,7 @@ p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) +
     theme(legend.position = "none")
 p5
 
-
-ggsave("graphics/lake_values.pdf",width=5,height=5,units="in",dpi=300)
+ggsave("graphics/lake_values.pdf",width=3.5,height=4,units="in",dpi=300)
 
 ##############
 #Credible Interval Overlap
@@ -213,9 +213,9 @@ m2d <- mcreg((biplot_low$p80),(biplot_low$middle/1.25),method.reg="PaBa",method.
 getCoefficients(m2d)
 
 #7 day average
-m3 <- mcreg(log10(biplot_avg$p80+1),log10(biplot_avg$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
-MCResult.plot(x=m3, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
-getCoefficients(m3)
+# m3 <- mcreg(log10(biplot_avg$p80+1),log10(biplot_avg$middle/1.25+1),method.reg="PaBa",method.ci = "nestedbootstrap",method.bootstrap.ci = "tBoot")
+# MCResult.plot(x=m3, add.legend=TRUE,equal.axis=TRUE,xn=50,ci.area = TRUE,x.lab="14 C",y.lab = "Free-water")
+# getCoefficients(m3)
 
 #lake specific regressions
 temp <- biplot %>% filter(lake=="Acton")
@@ -256,11 +256,8 @@ out <- dat_metab %>% filter(name=="GPP") %>%
     select(lake,year,yday,date, o2_pp_mmolcm3d,o2_pp_025_ci,o2_pp_975_ci,c14_pp_mmolcm3d)
 write_csv(out,"data/final/daily_pp_data.csv")
 
-out2 <- out %>% drop_na() %>% left_join(biplot_avg %>% select(lake,date,avg)) %>% 
-    rename(avg_o2_pp_mmolcm3d=avg)
+out2 <- out %>% drop_na() 
 write_csv(out2,"data/final/discreate_pp_data.csv")
 
-out3 <- out %>% left_join(biplot_avg %>% select(lake,date,avg)) %>% 
-    rename(avg_o2_pp_mmolcm3d=avg) %>% 
-    mutate(avg_o2_pp_mmolcm3d = avg_o2_pp_mmolcm3d/1.25)
+out3 <- out 
 write_csv(out3,"data/final/lottig_etal_data.csv")
