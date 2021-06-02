@@ -119,7 +119,7 @@ dummy <- data.frame(yday=rep(170,20),
                     year = c(2010:2012,2014,2014:2017,2007:2013,2007:2010,2012))
 
 p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(as.Date(yday, origin = as.Date("2019-01-01")), middle/1.25))+
-    geom_hline(yintercept = 0, size = 0.3, color = "gray50")+
+    geom_hline(yintercept = 0, size = 0, color = "gray50",alpha=0)+
     geom_ribbon(aes(ymin = lower/1.25, ymax = upper/1.25, fill = as.factor(lake)),
     linetype = 0, alpha = 0.2)+
     geom_line(aes(color=as.factor(lake))) +
@@ -141,7 +141,6 @@ p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=lake)) +
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
     theme_bw()+
-    theme(aspect.ratio=1) +
     labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
          x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
     scale_x_log10(limits=c(.5,1000)) +
@@ -152,23 +151,23 @@ p2
 
 p4 <- ggMarginal(p2,type="density")
 p4
-ggsave(plot = p4,"graphics/point_estimates.pdf",width=3.5,height=3.5,units="in",dpi=300)
+ggsave(plot = p4,"graphics/point_estimates.pdf",width=3.5,height=3.8,units="in",dpi=300)
 
 p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) + 
     geom_abline(slope = 1,intercept = 0) +
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
     theme_bw()+
-    coord_fixed(xlim = c(1,1000),ylim=c(1,1000)) +
+    # theme(aspect.ratio = 1) +
     labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
          x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
-    scale_x_log10() +
-    scale_y_log10() +
+    scale_x_log10(limits=c(1,1000)) +
+    scale_y_log10(limits=c(1,1000)) +
     facet_wrap(vars(lake))+
     theme(legend.position = "none")
 p5
 
-ggsave("graphics/lake_values.pdf",width=3.5,height=3.5,units="in",dpi=300)
+ggsave("graphics/lake_values.pdf",width=3.5,height=3.6,units="in",dpi=300)
 
 ##############
 #Credible Interval Overlap
