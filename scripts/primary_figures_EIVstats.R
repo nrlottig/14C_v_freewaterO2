@@ -111,12 +111,20 @@ biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(la
 
 #Overview Plot of Time Series (Figure 1)
 #mutate(date = as.Date(strptime(paste0(year, yday), format=“%Y %j”)))
+#
+#
+dummy <- data.frame(yday=rep(170,20),
+                    lake = c(rep("Acton",4),rep("Castle",4),rep("Sparkling",7),rep("Trout",5)),
+                    middle=c(rep(1100,4),rep(10,4),rep(19,7),rep(17,5)),
+                    year = c(2010:2012,2014,2014:2017,2007:2013,2007:2010,2012))
+
 p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(as.Date(yday, origin = as.Date("2019-01-01")), middle/1.25))+
     geom_hline(yintercept = 0, size = 0.3, color = "gray50")+
     geom_ribbon(aes(ymin = lower/1.25, ymax = upper/1.25, fill = as.factor(lake)),
     linetype = 0, alpha = 0.2)+
     geom_line(aes(color=as.factor(lake))) +
     geom_point(data = dat_c14,aes(x=as.Date(yday, origin = as.Date("2019-01-01")),y=p80),color="black") +
+    geom_blank(data=dummy)+
     # scale_color_manual(values = c("black","dodgerblue"),labels = c(expression(""^14*C),expression(O[2]))) +
     # scale_fill_manual(values = c("dodgerblue","firebrick"),guide=FALSE) +
     theme_bw() +
@@ -151,8 +159,7 @@ p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) +
     geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
     geom_point() +
     theme_bw()+
-    coord_fixed(xlim = c(1,600),ylim=c(1,600)) +
-    theme(aspect.ratio=1) +
+    coord_fixed(xlim = c(1,1000),ylim=c(1,1000)) +
     labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
          x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
     scale_x_log10() +
@@ -161,7 +168,7 @@ p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) +
     theme(legend.position = "none")
 p5
 
-ggsave("graphics/lake_values.pdf",width=3.5,height=4,units="in",dpi=300)
+ggsave("graphics/lake_values.pdf",width=3.5,height=3.5,units="in",dpi=300)
 
 ##############
 #Credible Interval Overlap
