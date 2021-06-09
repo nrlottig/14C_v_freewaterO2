@@ -29,7 +29,7 @@ sp_c14 <- sp_metab %>% left_join(sp_c14) %>%
     mutate(date_diff = abs(event-date)) %>% 
     group_by(event) %>% 
     filter(date_diff == min(date_diff)) %>% 
-    filter(delta_p ==min(delta_p)) %>% 
+    # filter(delta_p ==min(delta_p)) %>% 
     ungroup() %>% 
     select(date,p80,s62) %>% 
     mutate(lake="Sparkling")
@@ -52,7 +52,7 @@ tr_c14 <- tr_metab %>% left_join(tr_c14) %>%
     mutate(date_diff = abs(event-date)) %>% 
     group_by(event) %>% 
     filter(date_diff == min(date_diff)) %>% 
-    filter(delta_p ==min(delta_p)) %>% 
+    # filter(delta_p ==min(delta_p)) %>% 
     ungroup() %>% 
     select(date,p80,s62) %>% 
     mutate(lake="Trout")
@@ -133,7 +133,9 @@ p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(as.Date(yday, origin 
     theme(strip.text.x = element_text(size = 8))+
     theme(legend.position = "none")
 p1 
-ggsave(plot = p1,"graphics/metabolism.pdf",width=7,height=7.9,dpi=300,units="in")
+ggsave(plot = p1,"graphics/metabolism.pdf",width=7,height=7.9,dpi=1200,units="in")
+# ggsave(plot = p1,"graphics/metabolism.tiff",width=7,height=7.9,dpi=300,units="in")
+
 
 #Biplot of discreate Days
 p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=lake)) + 
@@ -151,7 +153,8 @@ p2
 
 p4 <- ggMarginal(p2,type="density")
 p4
-ggsave(plot = p4,"graphics/point_estimates.pdf",width=3.5,height=3.8,units="in",dpi=300)
+ggsave(plot = p4,"graphics/point_estimates.pdf",width=3.5,height=3.8,units="in",dpi=1200)
+
 
 p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) + 
     geom_abline(slope = 1,intercept = 0) +
@@ -167,7 +170,7 @@ p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) +
     theme(legend.position = "none")
 p5
 
-ggsave("graphics/lake_values.pdf",width=3.5,height=3.6,units="in",dpi=300)
+ggsave("graphics/lake_values.pdf",width=3.5,height=3.6,units="in",dpi=1200)
 
 ##############
 #Credible Interval Overlap
