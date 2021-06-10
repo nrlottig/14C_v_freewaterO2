@@ -145,7 +145,7 @@ p2 <- ggplot(data = biplot,aes(x=log10(p80),y=log10(middle/1.25),color=lake)) +
     theme(legend.title = element_blank())
 
 p2
-line1 <- "Free-water"
+line1 <- expression(Free-Water)
 line2 <- expression(O[2]~(mmol~C~m^-3~d^-1))
 p3<- p2 +  coord_cartesian(clip = "off") +
     draw_label(label = line1,x = -1.5,y=1.2,angle = 90,size = 11) +
