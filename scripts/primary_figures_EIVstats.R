@@ -6,6 +6,8 @@ library(zoo)
 library(mcr)
 library(MethComp)
 library(ggExtra)
+library(ggtext)
+library(cowplot)
 
 #Get raw data files
 date_matrix = tibble(date=seq(from=as_date("2007-01-01"),to=as_date("2017-12-31"),by="1 day")) %>% 
@@ -106,13 +108,6 @@ dat_metab <- rbind(sp_metab,tr_metab,ca_metab,ac_metab) %>%
 #biplot data for discreate days
 biplot <- dat_c14 %>% left_join(dat_metab %>% filter(name=="GPP")) %>% select(lake,year,middle,p80,upper,lower) %>% drop_na()
 
-#biplot data for average dayes
-# biplot_avg <- dat_c14 %>% left_join(dat_avg %>% filter(name=="GPP")) %>% select(lake,year,date,middle,p80,upper,lower,avg) %>% drop_na()
-
-#Overview Plot of Time Series (Figure 1)
-#mutate(date = as.Date(strptime(paste0(year, yday), format=“%Y %j”)))
-#
-#
 dummy <- data.frame(yday=rep(170,20),
                     lake = c(rep("Acton",4),rep("Castle",4),rep("Sparkling",7),rep("Trout",5)),
                     middle=c(rep(1100,4),rep(10,4),rep(19,7),rep(17,5)),
@@ -128,33 +123,38 @@ p1 <- ggplot(data = dat_metab %>% filter(name=="GPP") ,aes(as.Date(yday, origin 
     # scale_color_manual(values = c("black","dodgerblue"),labels = c(expression(""^14*C),expression(O[2]))) +
     # scale_fill_manual(values = c("dodgerblue","firebrick"),guide=FALSE) +
     theme_bw() +
-    labs(y=expression(mmol~C~m^-3~d^-1),color="",x="Day of Year") +
+    labs(y=expression(Pelagic~Primary~Production~(mmol~C~m^-3~d^-1)),color="",x="Day of Year") +
     facet_wrap(vars(lake,year),scales = "free_y",ncol=4) +
     theme(strip.text.x = element_text(size = 8))+
     theme(legend.position = "none")
 p1 
 ggsave(plot = p1,"graphics/metabolism.pdf",width=7,height=7.9,dpi=1200,units="in")
-# ggsave(plot = p1,"graphics/metabolism.tiff",width=7,height=7.9,dpi=300,units="in")
 
 
 #Biplot of discreate Days
-p2 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=lake)) + 
+p2 <- ggplot(data = biplot,aes(x=log10(p80),y=log10(middle/1.25),color=lake)) + 
     geom_abline(slope = 1,intercept = 0) +
-    geom_errorbar(aes(ymin=lower/1.25, ymax=upper/1.25),col="lightgrey") +
+    geom_errorbar(aes(ymin=log10(lower/1.25), ymax=log10(upper/1.25)),col="lightgrey") +
     geom_point() +
     theme_bw()+
-    labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
-         x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
-    scale_x_log10(limits=c(.5,1000)) +
-    scale_y_log10(limits=c(0.5,1000)) +
+    xlab(expression(""^14*C~(mmol~C~m^-3~d^-1))) +
+    ylab("\n") +
+    scale_x_continuous(breaks =c(0,1,2,3),labels=c("1","10","100","1000"),limits=c(-.3,3)) +
+    scale_y_continuous(breaks =c(0,1,2,3),labels=c("1","10","100","1000"),limits=c(-.3,3)) +
     theme(legend.position = "bottom") +
     theme(legend.title = element_blank())
+
 p2
+line1 <- "Free-water"
+line2 <- expression(O[2]~(mmol~C~m^-3~d^-1))
+p3<- p2 +  coord_cartesian(clip = "off") +
+    draw_label(label = line1,x = -1.5,y=1.2,angle = 90,size = 11) +
+    draw_label(label = line2,x = -1.20,y=1.2,angle = 90,size = 11)
 
-p4 <- ggMarginal(p2,type="density")
+
+p4 <- ggMarginal(p3,type="density")
 p4
-ggsave(plot = p4,"graphics/point_estimates.pdf",width=3.5,height=3.8,units="in",dpi=1200)
-
+ggsave(plot = p4,"graphics/point_estimates.pdf",width=3.5,height=3.7,units="in",dpi=1200)
 
 p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) + 
     geom_abline(slope = 1,intercept = 0) +
@@ -162,7 +162,7 @@ p5 <- ggplot(data = biplot,aes(x=p80,y=middle/1.25,color=as.factor(lake))) +
     geom_point() +
     theme_bw()+
     # theme(aspect.ratio = 1) +
-    labs(y =  expression(O[2]~(mmol~C~m^-3~d^-1)),
+    labs(y =  expression(Free-water~(mmol~C~m^-3~d^-1)),
          x = expression(""^14*C~(mmol~C~m^-3~d^-1))) +
     scale_x_log10(limits=c(1,1000)) +
     scale_y_log10(limits=c(1,1000)) +
